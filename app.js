@@ -1,7 +1,10 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
 // Supabase 설정
-const SUPABASE_URL = 'https://smfehxrxkbajkwbwvrma.supabaseClient.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_KbCFyIwlms6ZWfenTHRbcQ_alPXcIuM';
-const supabaseClient = window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://smfehxrxkbajkwbwvrma.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtZmVoeHJ4a2Jhamt3Ynd2cm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NzUwMTUsImV4cCI6MjA1NDE1MTAxNX0.dxWYnmU3h2OPCiOH0Kl_zQaP6t6fhWdNfJLVGhiSKk0';
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 전역 변수
 let currentUser = null;
@@ -103,16 +106,22 @@ function initEventListeners() {
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
     
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    errorEl.textContent = '';
     
-    if (error) {
-        alert('로그인 실패: ' + error.message);
-    } else {
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        
+        if (error) throw error;
+        
         currentUser = data.user;
         updateAuthUI();
         document.getElementById('login-modal').style.display = 'none';
         loadUserWorks();
+    } catch (error) {
+        errorEl.textContent = '로그인 실패: ' + error.message;
+        console.error('Login error:', error);
     }
 }
 
@@ -120,14 +129,29 @@ async function handleLogin() {
 async function handleSignup() {
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
+    const errorEl = document.getElementById('signup-error');
     
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    errorEl.textContent = '';
     
-    if (error) {
-        alert('회원가입 실패: ' + error.message);
-    } else {
-        alert('회원가입 성공! 이메일을 확인해주세요.');
-        document.getElementById('signup-modal').style.display = 'none';
+    try {
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: window.location.origin
+            }
+        });
+        
+        if (error) throw error;
+        
+        errorEl.style.color = 'green';
+        errorEl.textContent = '회원가입 성공! 이메일을 확인해주세요.';
+        setTimeout(() => {
+            document.getElementById('signup-modal').style.display = 'none';
+        }, 2000);
+    } catch (error) {
+        errorEl.textContent = '회원가입 실패: ' + error.message;
+        console.error('Signup error:', error);
     }
 }
 
@@ -246,7 +270,8 @@ async function savePhotocard() {
         return;
     }
     
-    canvas.toBlob(async (blob) => {
+    try {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve));
         const fileName = `photocard_${Date.now()}.png`;
         
         // Storage에 업로드
@@ -254,13 +279,10 @@ async function savePhotocard() {
             .from('photocards')
             .upload(`${currentUser.id}/${fileName}`, blob);
         
-        if (uploadError) {
-            alert('저장 실패: ' + uploadError.message);
-            return;
-        }
+        if (uploadError) throw uploadError;
         
         // DB에 기록
-        const { error: dbError } = await supabase
+        const { error: dbError } = await supabaseClient
             .from('photocards')
             .insert({
                 user_id: currentUser.id,
@@ -268,13 +290,14 @@ async function savePhotocard() {
                 template: currentTemplate
             });
         
-        if (dbError) {
-            alert('DB 저장 실패: ' + dbError.message);
-        } else {
-            alert('저장 완료!');
-            loadUserWorks();
-        }
-    });
+        if (dbError) throw dbError;
+        
+        alert('저장 완료!');
+        loadUserWorks();
+    } catch (error) {
+        alert('저장 실패: ' + error.message);
+        console.error('Save error:', error);
+    }
 }
 
 // 다운로드
@@ -289,47 +312,51 @@ function downloadPhotocard() {
 async function loadUserWorks() {
     if (!currentUser) return;
     
-    const { data, error } = await supabase
-        .from('photocards')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-    
-    if (error) {
-        console.error('작품 로드 실패:', error);
-        return;
-    }
-    
-    const grid = document.getElementById('works-grid');
-    grid.innerHTML = '';
-    
-    data.forEach(work => {
-        const { data: { publicUrl } } = supabaseClient.storage
+    try {
+        const { data, error } = await supabaseClient
             .from('photocards')
-            .getPublicUrl(work.file_path);
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
         
-        const item = document.createElement('div');
-        item.className = 'work-item';
-        item.innerHTML = `
-            <img src="${publicUrl}" alt="Photocard">
-            <button class="delete-btn" onclick="deleteWork('${work.id}')">삭제</button>
-        `;
-        grid.appendChild(item);
-    });
+        if (error) throw error;
+        
+        const grid = document.getElementById('works-grid');
+        grid.innerHTML = '';
+        
+        for (const work of data) {
+            const { data: { publicUrl } } = supabaseClient.storage
+                .from('photocards')
+                .getPublicUrl(work.file_path);
+            
+            const item = document.createElement('div');
+            item.className = 'work-item';
+            item.innerHTML = `
+                <img src="${publicUrl}" alt="Photocard">
+                <button class="delete-btn" onclick="deleteWork('${work.id}')">삭제</button>
+            `;
+            grid.appendChild(item);
+        }
+    } catch (error) {
+        console.error('Load works error:', error);
+    }
 }
 
 // 작품 삭제
-async function deleteWork(id) {
+window.deleteWork = async function(id) {
     if (!confirm('정말 삭제하시겠습니까?')) return;
     
-    const { error } = await supabase
-        .from('photocards')
-        .delete()
-        .eq('id', id);
-    
-    if (error) {
-        alert('삭제 실패: ' + error.message);
-    } else {
+    try {
+        const { error } = await supabaseClient
+            .from('photocards')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
         loadUserWorks();
+    } catch (error) {
+        alert('삭제 실패: ' + error.message);
+        console.error('Delete error:', error);
     }
 }
