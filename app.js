@@ -1,7 +1,7 @@
 // Supabase 설정
-const SUPABASE_URL = 'https://smfehxrxkbajkwbwvrma.supabase.co';
+const SUPABASE_URL = 'https://smfehxrxkbajkwbwvrma.supabaseClient.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_KbCFyIwlms6ZWfenTHRbcQ_alPXcIuM';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 전역 변수
 let currentUser = null;
@@ -22,7 +22,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // 인증 초기화
 async function initAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
         updateAuthUI();
@@ -104,7 +104,7 @@ async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     
     if (error) {
         alert('로그인 실패: ' + error.message);
@@ -121,7 +121,7 @@ async function handleSignup() {
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
     
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
     
     if (error) {
         alert('회원가입 실패: ' + error.message);
@@ -133,7 +133,7 @@ async function handleSignup() {
 
 // 로그아웃
 async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     currentUser = null;
     updateAuthUI();
     document.getElementById('works-grid').innerHTML = '';
@@ -250,7 +250,7 @@ async function savePhotocard() {
         const fileName = `photocard_${Date.now()}.png`;
         
         // Storage에 업로드
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
             .from('photocards')
             .upload(`${currentUser.id}/${fileName}`, blob);
         
@@ -304,7 +304,7 @@ async function loadUserWorks() {
     grid.innerHTML = '';
     
     data.forEach(work => {
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = supabaseClient.storage
             .from('photocards')
             .getPublicUrl(work.file_path);
         
