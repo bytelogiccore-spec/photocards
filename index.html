@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포토카드 메이커</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 포토카드 메이커</h1>
+            <div id="auth-section">
+                <button id="login-btn" class="btn">로그인</button>
+                <button id="signup-btn" class="btn">회원가입</button>
+                <div id="user-info" style="display: none;">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="btn">로그아웃</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- 로그인 모달 -->
+            <div id="login-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>로그인</h2>
+                    <input type="email" id="login-email" placeholder="이메일">
+                    <input type="password" id="login-password" placeholder="비밀번호">
+                    <button id="login-submit" class="btn">로그인</button>
+                </div>
+            </div>
+
+            <!-- 회원가입 모달 -->
+            <div id="signup-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>회원가입</h2>
+                    <input type="email" id="signup-email" placeholder="이메일">
+                    <input type="password" id="signup-password" placeholder="비밀번호">
+                    <button id="signup-submit" class="btn">가입하기</button>
+                </div>
+            </div>
+
+            <!-- 편집 영역 -->
+            <div class="editor">
+                <div class="toolbar">
+                    <h3>템플릿 선택</h3>
+                    <div class="template-grid">
+                        <div class="template" data-template="classic">클래식</div>
+                        <div class="template" data-template="modern">모던</div>
+                        <div class="template" data-template="vintage">빈티지</div>
+                        <div class="template" data-template="minimal">미니멀</div>
+                    </div>
+
+                    <h3>이미지 업로드</h3>
+                    <input type="file" id="image-upload" accept="image/*">
+
+                    <h3>텍스트 추가</h3>
+                    <input type="text" id="text-input" placeholder="텍스트 입력">
+                    <input type="color" id="text-color" value="#ffffff">
+                    <button id="add-text-btn" class="btn">텍스트 추가</button>
+
+                    <h3>스티커</h3>
+                    <div class="sticker-grid">
+                        <span class="sticker" data-sticker="⭐">⭐</span>
+                        <span class="sticker" data-sticker="💖">💖</span>
+                        <span class="sticker" data-sticker="✨">✨</span>
+                        <span class="sticker" data-sticker="🌸">🌸</span>
+                        <span class="sticker" data-sticker="🎀">🎀</span>
+                        <span class="sticker" data-sticker="🎵">🎵</span>
+                    </div>
+
+                    <button id="save-btn" class="btn primary">포토카드 저장</button>
+                    <button id="download-btn" class="btn">다운로드</button>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="photocard-canvas" width="600" height="900"></canvas>
+                </div>
+            </div>
+
+            <!-- 내 작품 -->
+            <div id="my-works" style="display: none;">
+                <h2>내 포토카드</h2>
+                <div id="works-grid" class="works-grid"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
